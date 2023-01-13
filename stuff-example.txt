@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 token: discord_token
 prefix: $
 
@@ -18,3 +19,25 @@ tables:
     coins: rc_coins
 
 
+=======
+token: discord_token
+prefix: $
+
+db_credentials:
+    host: 255.255.255.255
+    port: 6969
+    user: user
+    password: password
+    database: db
+
+mod_roles: [id1, id2]
+rp_categories: [id1, id2]
+
+debug: True
+
+tables:
+    xp: rc_xp
+    coins: rc_coins
+
+
+>>>>>>> 7ccef56dc1de1e253f5ebee1e19266ce6df1a418

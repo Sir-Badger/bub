@@ -649,7 +649,7 @@ async def top(ctx): # looks up the top 5 folks
     top_list=""
     author_rank=0
 
-    query.execute(f"""SELECT account_id, total_xp FROM {conf['tables']['xp']} ORDER BY total_xp, account_id DESC""")
+    query.execute(f"""SELECT account_id, total_xp FROM {conf['tables']['xp']} ORDER BY total_xp DESC""")
     ordered = query.fetchall()
     for rank in range(0, len(ordered)): # loop through all accounts
         account = ordered[rank] # get reference to the current account

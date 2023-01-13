@@ -79,7 +79,7 @@ database = mysql.connector.connect(
   host=conf["db_credentials"]["host"],
   port=conf["db_credentials"]["port"],
   user=conf["db_credentials"]["user"],
-  password=conf["db_credentials"]["password"], # why do you not function from the file, I weep
+  password=conf["db_credentials"]["password"],
   database=conf["db_credentials"]["database"]
 )
 
@@ -501,7 +501,7 @@ async def stats(ctx, member:discord.Member=None): # show member stats
             # reference rank
             rank_txt=""
             for rank in range(len(ordered)): # get main user rank
-                if ordered[rank][1]==account[1]:
+                if ordered[rank][0]==account[0]:
                     r=rank
                     break
             
@@ -649,7 +649,7 @@ async def top(ctx): # looks up the top 5 folks
     top_list=""
     author_rank=0
 
-    query.execute(f"""SELECT account_id, total_xp FROM {conf['tables']['xp']} ORDER BY total_xp DESC""")
+    query.execute(f"""SELECT account_id, total_xp FROM {conf['tables']['xp']} ORDER BY total_xp, account_id DESC""")
     ordered = query.fetchall()
     for rank in range(0, len(ordered)): # loop through all accounts
         account = ordered[rank] # get reference to the current account

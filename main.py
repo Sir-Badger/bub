@@ -351,7 +351,7 @@ Ping {QuestBored.latency * 1000}ms
 async def on_message(message): # recieves msg
     if message.author.bot == False: # ignore bot users
         t0=time.time()
-        print(f"Message by {message.author} in {message.channel} :\n{message.content}") # basic debug
+        print(f"[33m<{time.strftime('%d. %m. %H:%M:%S', time.localtime())} | Message in [0m{message.channel} [33mby [0m{message.author}[33m >[0m\n{message.content[:50]}[0m") # basic debug
 
         if message.content.startswith(QuestBored.command_prefix): # if the msg is a cmd
             await QuestBored.process_commands(message)

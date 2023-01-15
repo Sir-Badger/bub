@@ -10,6 +10,7 @@ db_credentials:
 
 mod_roles: [id1, id2]
 rp_categories: [id1, id2]
+rp_limit: 69
 
 debug: True
 

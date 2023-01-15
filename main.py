@@ -196,7 +196,7 @@ async def proccess_msg_for_rp(msg): # processes msg in terms of rp
     if word_limit:
         word_limit=word_limit[0]
     else:
-        word_limit=150
+        word_limit=conf["rp_limit"]
 
     if word_limit==0:
         if debug_mode: print("message not eligable for XP gain, reached limit")
@@ -323,7 +323,7 @@ async def reset_word_limits(): # resets all users word limits
     print("====== Reseting word limits ======")
     t=time.time()
 
-    query.execute(f"""UPDATE {conf['tables']['xp']} SET word_limit = 150""")
+    query.execute(f"""UPDATE {conf['tables']['xp']} SET word_limit = {conf['rp_limit']}""")
     database.commit()
 
     print(f"time to reset: {time.time()-t}")
@@ -338,7 +338,7 @@ async def reset_word_limits(): # resets all users word limits
 @QuestBored.event
 async def on_ready(): # login msg + ping
     sched.start() #start scheduler
-    sched.add_job(reset_word_limits, CronTrigger(minute="0,30",second="0"))
+    sched.add_job(reset_word_limits, CronTrigger(minute="0",second="0",hour="0"))
 
     print(f"""
 -----------
@@ -351,7 +351,7 @@ Ping {QuestBored.latency * 1000}ms
 async def on_message(message): # recieves msg
     if message.author.bot == False: # ignore bot users
         t0=time.time()
-        print(f"[33m<{time.strftime('%d. %m. %H:%M:%S', time.localtime())} | Message in [0m{message.channel} [33mby [0m{message.author}[33m >[0m\n{message.content[:50]}[0m") # basic debug
+        print(f"\n[33m<{time.strftime('%d. %m. %H:%M:%S', time.localtime())} | Message in [0m{message.channel} [33mby [0m{message.author}[33m>[0m\n{message.content[:100]}") # basic debug
 
         if message.content.startswith(QuestBored.command_prefix): # if the msg is a cmd
             await QuestBored.process_commands(message)
@@ -494,7 +494,7 @@ async def stats(ctx, member:discord.Member=None): # show member stats
 
             tembed=discord.Embed(
                 title=f"**{member.name}'s stats:**",
-                description=f"**Level:** `{account[3]}`\n**xp:**  `{account[1]}`\n{next_lvl}**Remaining potential XP:** `{account[2]}/150`",
+                description=f"**Level:** `{account[3]}`\n**xp:**  `{account[1]}`\n{next_lvl}**Remaining potential XP:** `{account[2]}/{conf['rp_limit']}`",
                 color=member.color
             ) # fancy emb
             

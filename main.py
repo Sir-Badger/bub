@@ -94,8 +94,8 @@ def check_Mod_Role(member): # check whether the user has a DM role
 
 # add account to db using default template
 def add_account_to_db(id, xp=default_account['xp'], word_limit=default_account['word_limit'], level=default_account['level'], lvl_notification=default_account['lvl_notification']):
-    query.execute(f"""INSERT INTO {conf['tables']['xp']}(account_id, total_xp, word_limit, level, lvl_notification)
-                VALUES ({id}, {xp}, {word_limit}, {level}, {lvl_notification})""")
+    query.execute(f"""INSERT INTO {conf['tables']['xp']}(account_id, total_xp, word_limit, level, lvl_notification, active)
+                VALUES ({id}, {xp}, {word_limit}, {level}, {lvl_notification}, True)""")
     database.commit()
 
 def find_substring_indexes(desired_substring, message, index_type='start'): # returns index/es of substring
@@ -306,12 +306,12 @@ async def add_xp(xp, user, rp=False): # add xp to cache
         return f"{account[1]} -> {account[1]+xp}"
     else: # add account to database
         if rp:
-            add_account_to_db(id=user.id, xp=xp, word_limit=150-xp)
+            add_account_to_db(id=user.id, xp=xp, word_limit=conf['tables']['xp']-xp)
         else:
             add_account_to_db(id=user.id, xp=xp)
 
 async def notify(member_list, msg="You have been notified!"): # notify role/member of something
-    notify_channel = QuestBored.get_channel(881610415304507433) # set notify channel
+    notify_channel = QuestBored.get_channel(695546827918802944) # set notify channel
 
     mention_text="> "
     for m in member_list: # loop through members to @
@@ -481,7 +481,7 @@ async def stats(ctx, member:discord.Member=None): # show member stats
             color=member.color
         ) # fancy emb
     else: # msg for players
-        query.execute(f"""SELECT account_id, total_xp FROM {conf['tables']['xp']} ORDER BY total_xp DESC""")
+        query.execute(f"""SELECT account_id, total_xp FROM {conf['tables']['xp']} WHERE active = True ORDER BY total_xp DESC""")
         ordered = query.fetchall()
         query.execute(f"""SELECT * FROM {conf['tables']['xp']} WHERE account_id = {member.id}""") # look up player in db
 
@@ -649,7 +649,7 @@ async def top(ctx): # looks up the top 5 folks
     top_list=""
     author_rank=0
 
-    query.execute(f"""SELECT account_id, total_xp FROM {conf['tables']['xp']} ORDER BY total_xp DESC""")
+    query.execute(f"""SELECT account_id, total_xp FROM {conf['tables']['xp']} WHERE active = True ORDER BY total_xp DESC""")
     ordered = query.fetchall()
     for rank in range(0, len(ordered)): # loop through all accounts
         account = ordered[rank] # get reference to the current account

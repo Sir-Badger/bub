@@ -186,12 +186,6 @@ def remove_redundant_pairs(valid_pairs): # returns a pair without redundant pair
 
     return valid_pairs
 
-def lookup_account(id):
-    q = database.cursor()
-    q.execute(f"""SELECT * FROM {conf['tables']['xp']} WHERE account_id = {id}""") # lookup user
-    account = q.fetchone() # access account info
-    q.close()
-    return account
 
 async def proccess_msg_for_rp(msg): # processes msg in terms of rp
     debug_mode=False
@@ -303,7 +297,7 @@ async def add_xp(xp, user, rp=False): # add xp to cache
         return f"{account[1]} -> {account[1]+xp}"
     else: # add account to database
         if rp:
-            add_account_to_db(id=user.id, xp=xp, word_limit=int(conf['tables']['xp'])-xp)
+            add_account_to_db(id=user.id, xp=xp, word_limit=conf['rp_limit']-xp)
         else:
             add_account_to_db(id=user.id, xp=xp)
 

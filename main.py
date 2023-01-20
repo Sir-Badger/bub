@@ -186,15 +186,19 @@ def remove_redundant_pairs(valid_pairs): # returns a pair without redundant pair
 
     return valid_pairs
 
+def lookup_account(id):
+    q = database.cursor()
+    q.execute(f"""SELECT * FROM {conf['tables']['xp']} WHERE account_id = {id}""") # lookup user
+    account = q.fetchone() # access account info
+    q.close()
+    return account
 
 async def proccess_msg_for_rp(msg): # processes msg in terms of rp
     debug_mode=False
 
-    query.execute(f"""SELECT word_limit FROM {conf['tables']['xp']} WHERE account_id = {msg.author.id}""")
-    word_limit = query.fetchone() # get reference to acc's word limit
-
-    if word_limit:
-        word_limit=word_limit[0]
+    account=lookup_account(msg.author.id)
+    if account:
+        word_limit=account[2]
     else:
         word_limit=conf["rp_limit"]
 
@@ -208,7 +212,6 @@ async def proccess_msg_for_rp(msg): # processes msg in terms of rp
         num_of_double_stars=msg.content.count('**')
 
     t0=time.time()
-
     message=''
     for line in msg.content.split("\n"): # remove lines that start with '> '
         if not line.startswith((">","> ","- ","-")) and line != '':
@@ -228,12 +231,13 @@ async def proccess_msg_for_rp(msg): # processes msg in terms of rp
     for double in double_under_index: # loop through underscore_index and remove the __
         underscore_index.remove(double)
 
-    # Making basic **, "" and __ pairs
-    valid_pairs=[]
+    
+    
     cached_star=[False]
     cached_quote=[False]
     cached_under=[False]
-
+    # Make valid pairs of "", **, exc
+    valid_pairs=[]
     for char in range(0, len(message)): # going through the message char by char, building pairs
         if char in star_index: # char is a star
             if cached_star[0]: # we have a cached star
@@ -253,15 +257,10 @@ async def proccess_msg_for_rp(msg): # processes msg in terms of rp
                 cached_under[0]=False
             else: # we don't have a cached underscore
                 cached_under=[True, char]
-
     valid_pairs=remove_redundant_pairs(valid_pairs)
 
-    # cleanup
-    message = message.replace("*"," ")
-    message = message.replace("`"," ")
-    message = message.replace("|"," ")
-    message = message.replace('"',' ')
-    message = message.replace("_"," ")
+    for char_to_rem in ("*","`","|",'"',"_"): # cleanup
+        message = message.replace(char_to_rem," ")
 
     word_count=0
     for rp_pair in valid_pairs: # count them words & add them to the counter
@@ -282,9 +281,8 @@ async def proccess_msg_for_rp(msg): # processes msg in terms of rp
     await add_xp(word_count, msg.author, rp=True) # add xp to database
 
 async def add_xp(xp, user, rp=False): # add xp to cache
-    query.execute(f"""SELECT * FROM {conf['tables']['xp']} WHERE account_id = {user.id}""") # lookup user
-    account = query.fetchone() # access account info
-    if query.rowcount==1: # if the account already has logged xp
+    account=lookup_account(user.id)
+    if account: # if the account already has logged xp
         if rp==True: # processing rp xp
             query.execute(f"""UPDATE {conf['tables']['xp']}
                 SET total_xp = {account[1]+xp}, word_limit = {account[2]-xp}
@@ -293,7 +291,6 @@ async def add_xp(xp, user, rp=False): # add xp to cache
             query.execute(f"""UPDATE {conf['tables']['xp']}
                 SET total_xp = {account[1]+xp}
                 WHERE account_id = {user.id};""")
-        # commit to changes
 
         if account[3]<20:
             if account[1]+xp>=level_req[account[3]+1] and account[4]: # if they can lvl, notify them
@@ -306,7 +303,7 @@ async def add_xp(xp, user, rp=False): # add xp to cache
         return f"{account[1]} -> {account[1]+xp}"
     else: # add account to database
         if rp:
-            add_account_to_db(id=user.id, xp=xp, word_limit=conf['tables']['xp']-xp)
+            add_account_to_db(id=user.id, xp=xp, word_limit=int(conf['tables']['xp'])-xp)
         else:
             add_account_to_db(id=user.id, xp=xp)
 
@@ -351,14 +348,13 @@ Ping {QuestBored.latency * 1000}ms
 async def on_message(message): # recieves msg
     if message.author.bot == False: # ignore bot users
         t0=time.time()
-        print(f"\n[33m<{time.strftime('%d. %m. %H:%M:%S', time.localtime())} | Message in [0m{message.channel} [33mby [0m{message.author}[33m>[0m\n{message.content[:100]}") # basic debug
+        print(f"[33m<{time.strftime('%d. %m. %H:%M:%S', time.localtime())} | Message in [0m{message.channel} [33mby [0m{message.author}[33m>[0m\n{message.content[:100]}") # basic debug
 
         if message.content.startswith(QuestBored.command_prefix): # if the msg is a cmd
             await QuestBored.process_commands(message)
         elif message.channel.category.id in conf["rp_categories"]: # the msg is not a cmd & is in an rp cathegory
             await proccess_msg_for_rp(message)
         print(f" - processing time: {time.time()-t0}")
-        print("\n")
 
 # ---------------------- discord cmds --------------------- #
 # ---------- miscellaneous ---------- #
@@ -481,12 +477,11 @@ async def stats(ctx, member:discord.Member=None): # show member stats
             color=member.color
         ) # fancy emb
     else: # msg for players
-        query.execute(f"""SELECT account_id, total_xp FROM {conf['tables']['xp']} WHERE active = True ORDER BY total_xp DESC""")
-        ordered = query.fetchall()
-        query.execute(f"""SELECT * FROM {conf['tables']['xp']} WHERE account_id = {member.id}""") # look up player in db
-
-        account=query.fetchone() # get account info
-        if query.rowcount==1: # if the player is in the database
+        account = lookup_account(member.id)
+        
+        if account: # if the player is in the database
+            query.execute(f"""SELECT account_id, total_xp FROM {conf['tables']['xp']} WHERE active = True ORDER BY total_xp DESC""")
+            ordered = query.fetchall()
             if account[3]==20:
                 next_lvl=''
             else:

@@ -92,6 +92,12 @@ def check_Mod_Role(member): # check whether the user has a DM role
             return True # return true
     return False # if we loop through all roles without getting a DM role, return false
 
+def lookup_account(id):
+    q=database.cursor()
+    q.execute(f"""SELECT * FROM {conf['tables']['xp']} WHERE account_id = {id}""")
+    account = q.fetchone()
+    return account
+
 # add account to db using default template
 def add_account_to_db(id, xp=default_account['xp'], word_limit=default_account['word_limit'], level=default_account['level'], lvl_notification=default_account['lvl_notification']):
     query.execute(f"""INSERT INTO {conf['tables']['xp']}(account_id, total_xp, word_limit, level, lvl_notification, active)

@@ -42,7 +42,7 @@ level_req={
 }
 default_account={
                 "xp":0,
-                "word_limit":150,
+                "word_limit":conf["rp_limit"],
                 "level":1,
                 "lvl_notification":True,
                 }

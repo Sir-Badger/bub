@@ -356,6 +356,22 @@ async def on_message(message): # recieves msg
             await proccess_msg_for_rp(message)
         print(f" - processing time: {time.time()-t0}")
 
+@QuestBored.event
+async def on_member_remove(member): # change activity
+    if lookup_account(member.id):
+        query.execute(f"""UPDATE rc_xp
+                        SET active = False
+                        WHERE account_id = {member.id}""")
+        database.commit()
+
+@QuestBored.event
+async def on_member_join(member): # change activity
+    if lookup_account(member.id):
+        query.execute(f"""UPDATE rc_xp
+                    SET active = True
+                    WHERE account_id = {member.id}""")
+        database.commit()
+
 # ---------------------- discord cmds --------------------- #
 # ---------- miscellaneous ---------- #
 @QuestBored.command()

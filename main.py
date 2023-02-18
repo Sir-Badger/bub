@@ -359,7 +359,7 @@ async def on_message(message): # recieves msg
 @QuestBored.event
 async def on_member_remove(member): # change activity
     if lookup_account(member.id):
-        query.execute(f"""UPDATE rc_xp
+        query.execute(f"""UPDATE {conf['tables']['xp']}
                         SET active = False
                         WHERE account_id = {member.id}""")
         database.commit()
@@ -367,7 +367,7 @@ async def on_member_remove(member): # change activity
 @QuestBored.event
 async def on_member_join(member): # change activity
     if lookup_account(member.id):
-        query.execute(f"""UPDATE rc_xp
+        query.execute(f"""UPDATE {conf['tables']['xp']}
                     SET active = True
                     WHERE account_id = {member.id}""")
         database.commit()

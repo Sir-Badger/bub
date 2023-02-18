@@ -24,7 +24,7 @@ Now that we have located the roleplay designating characters, we need to constru
 ### Filtering out overlapping pairs
 Given that some pairs might be contained within each other or overlap, we need to remove the redundant ones and join the overlapping ones so that we don't count the words contained in the pairs multiple times. Effectovely, two situations can arrise here, the simplified resolution of which is shown below:
  Overlap | Effective result
- - | -
+ --- | ---
  `"Lorem *ipsum" dolor...*` | `"Lorem ipsum dolor...*`
  `"Lorem *ipsum* dolor..."` | `"Lorem ipsum dolor..."`
 

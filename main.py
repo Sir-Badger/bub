@@ -343,6 +343,7 @@ Logged in as {QuestBored.user}
 Ping {QuestBored.latency * 1000}ms
 -----------
 """)
+    # a
 
 @QuestBored.event
 async def on_message(message): # recieves msg

@@ -3,7 +3,7 @@ Bub is a discord bot written in python, whose main purpose is tracking the exper
 If you want to use Bub on your own servers the source code is freely available, just don't claim it as your own. It was designed to work with a MySQL database. Currently it needs to be set up manually, but eventually there will be a script for setting it up.
 
 ## Functions of the bot
-As stated, the primary function of Bub is to track the roleplay and converting the messages into an amount of experience, according to some specified rules. The bot also has other functions in regards to managing the experience of the accounts in it's database, such as reseting to 0, adding and removing xp and looking up the current experience of accounts using discord mentions (such as @chump)
+As stated, the primary function of Bub is to track the roleplay and converting the messages into an amount of experience, according to some specified rules. The bot also has other functions in regards to managing the experience of the accounts in it's database, such as reseting to 0, adding and removing xp and looking up the current experience of accounts using discord mentions (such as @nerd)
 
 ## The word processing algorithm
 In order to determine how many words of roleplay a message contains, Bub uses a custom algorithm. In order to describe it, let's divide it into steps we need to accomplish:

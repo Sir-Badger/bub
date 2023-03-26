@@ -6,6 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler # async scheduler
 from apscheduler.triggers.cron import CronTrigger # timed trigger
 import yaml
 import asyncio # asynchronous funcionality
+import rp_word_counter as rp # word counter
 
 # ---------------------- general setup --------------------- #
 print(f"Setting up...")
@@ -104,175 +105,21 @@ def add_account_to_db(id, xp=default_account['xp'], word_limit=default_account['
                 VALUES ({id}, {xp}, {word_limit}, {level}, {lvl_notification}, True)""")
     database.commit()
 
-def find_substring_indexes(desired_substring, message, index_type='start'): # returns index/es of substring
-    array_of_indexes=[]
-    # start the search at 0
-    search_start_index=0
-    while search_start_index < len(message):
-        # look for the substring
-        find_index=message[search_start_index:].find(desired_substring)
-        # check if we found it
-        if find_index!=-1:
-            # if we found it, add it to our results
-            # the index we find is relative to the start position, so we have to add it
-            # append things depending on if we want last, first or all indexes. Defaults to start index
-            if index_type=="end":
-                # appends the last index of the substring
-                array_of_indexes.append(find_index+search_start_index+len(desired_substring)-1)
-
-            elif index_type=="all":
-                # appends all indexes of the substring
-                for char_in_substring in range(0, len(desired_substring)):
-                    array_of_indexes.append(find_index+search_start_index+char_in_substring)
-            else:
-                # appends the starting index
-                array_of_indexes.append(find_index+search_start_index)
-            # set new start index
-            search_start_index=search_start_index+find_index+len(desired_substring)
-        else:
-            # if not, break the search loop
-            break
-    return array_of_indexes
-
-def check_pair_overlap(main_pair, secondary_pair): # checks the overlap of two pairs
-    debug_mode=False
-    # one is inside the other
-    if secondary_pair[0] in range(main_pair[0], main_pair[1]) and secondary_pair[1] in range(main_pair[0], main_pair[1]): # sec inside main
-        if debug_mode: print(f"{secondary_pair} is inside {main_pair}") 
-        return 1
-    elif main_pair[0] in range(secondary_pair[0], secondary_pair[1]) and main_pair[1] in range(secondary_pair[0], secondary_pair[1]): # main is inside sec
-        if debug_mode: print(f"{main_pair} is inside {secondary_pair}") 
-        return 2
-    elif secondary_pair[0] in range(main_pair[0], main_pair[1]) : # sec starts in main
-        if debug_mode: print(f"{secondary_pair} starts inside {main_pair}") 
-        return 3
-    elif secondary_pair[1] in range(main_pair[0], main_pair[1]) : # sec ends in main
-        if debug_mode: print(f"{secondary_pair} ends inside {main_pair}") 
-        return 4
-    else: # they don't touch
-        if debug_mode: print(f"{main_pair} doesn't overlap with {secondary_pair}")
-        return False
-
-def remove_redundant_pairs(valid_pairs): # returns a pair without redundant pairs
-    main_index=0
-    while True: # loop as long as there's things to remove
-        if main_index==len(valid_pairs): # if we're done removing, move to the next main pair
-            break
-        main_pair = valid_pairs[main_index] # get main pair
-        sec_index=main_index+1 # set the start point for sec pairs
-
-        while True: # loop through all the other pairs
-            if sec_index==len(valid_pairs): # if we ran out of secondary pairs, move onto the next main pair
-                break
-            secondary_pair = valid_pairs[sec_index] # update secondary pair
-
-            overlap=check_pair_overlap(main_pair, secondary_pair) # see overlap
-
-            if overlap == 1: # sec is inside main
-                valid_pairs.remove(secondary_pair) # yeet out the redundant pair
-            elif overlap == 2: # main is inside sec
-                valid_pairs.remove(secondary_pair) # yeet out the soon to be redundant pair
-                main_pair=secondary_pair # expand the main pair
-                valid_pairs[main_index]=main_pair # update list
-                sec_index=main_index+1 # reset sec index
-            elif overlap == 3: # sec starts in main
-                valid_pairs.remove(secondary_pair) # yeet out the soon to be redundant pair
-                main_pair=[main_pair[0], secondary_pair[1]] # expand the main pair
-                valid_pairs[main_index]=main_pair # update list
-                sec_index=main_index+1 # reset sec index
-            elif overlap == 4: # main starts in sec
-                valid_pairs.remove(secondary_pair) # yeet out the soon to be redundant pair
-                main_pair=[secondary_pair[0], main_pair[1]] # expand the main pair
-                valid_pairs[main_index]=main_pair # update list
-                sec_index=main_index+1 # reset sec index
-            else: # they don't overlap -> move onto the next pair to check against
-                sec_index+=1
-
-        main_index+=1 # move onto the next main pair
-
-    return valid_pairs
-
-
 async def proccess_msg_for_rp(msg): # processes msg in terms of rp
     debug_mode=False
-
     account=lookup_account(msg.author.id)
     if account:
         word_limit=account[2]
     else:
         word_limit=conf["rp_limit"]
+    
+    t0=time.time()
 
     if word_limit==0:
         if debug_mode: print("message not eligable for XP gain, reached limit")
         return # if the limit was expended, just ignore
 
-    if debug_mode: # Number of substrings in the message (Debug)
-        num_of_stars=msg.content.count('*')
-        num_of_quotes=msg.content.count('"')
-        num_of_double_stars=msg.content.count('**')
-
-    t0=time.time()
-    message=''
-    for line in msg.content.split("\n"): # remove lines that start with '> '
-        if not line.startswith((">","> ","- ","-")) and line != '':
-            message+=" "+line
-
-    # Indexes of the substrings
-    star_index=find_substring_indexes('*', message)
-    double_star_index=find_substring_indexes('**', message, "all")
-
-    quote_index=find_substring_indexes('"', message)
-
-    underscore_index=find_substring_indexes('_', message)
-    double_under_index=find_substring_indexes('__', message, "all")
-
-    for double in double_star_index: # loop through star_index and remove the **
-        star_index.remove(double)
-    for double in double_under_index: # loop through underscore_index and remove the __
-        underscore_index.remove(double)
-
-    
-    
-    cached_star=[False]
-    cached_quote=[False]
-    cached_under=[False]
-    # Make valid pairs of "", **, exc
-    valid_pairs=[]
-    for char in range(0, len(message)): # going through the message char by char, building pairs
-        if char in star_index: # char is a star
-            if cached_star[0]: # we have a cached star
-                valid_pairs.append([cached_star[1], char])
-                cached_star[0]=False
-            else: # we don't have a cached star
-                cached_star=[True, char]
-        elif char in quote_index: #char is a quote
-            if cached_quote[0]: # we have a cached quote
-                valid_pairs.append([cached_quote[1], char])
-                cached_quote[0]=False
-            else: # we don't have a cached quote
-                cached_quote=[True, char]
-        elif char in underscore_index: #char is an underscore
-            if cached_under[0]: # we have a cached underscore
-                valid_pairs.append([cached_under[1], char])
-                cached_under[0]=False
-            else: # we don't have a cached underscore
-                cached_under=[True, char]
-    valid_pairs=remove_redundant_pairs(valid_pairs)
-
-    for char_to_rem in ("*","`","|",'"',"_"): # cleanup
-        message = message.replace(char_to_rem," ")
-
-    word_count=0
-    for rp_pair in valid_pairs: # count them words & add them to the counter
-        rp_text=message[rp_pair[0]+1:rp_pair[1]]
-        for word in rp_text.split(' '):
-            if word != '': word_count+=1 # ignore empty
-
-    if debug_mode: # some console output for debugging
-        print(f'Num of * = {num_of_stars} | Num of " = {num_of_quotes} | Num of ** = {num_of_double_stars}')
-        print(f'indexes of * = {star_index} | indexes of " = {quote_index} | indexes of ** = {double_star_index}')
-
-        print(f'valid pairs = {valid_pairs} | total word count = {word_count}')
+    word_count=rp.count(msg.content)
 
     print(f" - xp processing time: {time.time()-t0}")
 

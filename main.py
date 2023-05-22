@@ -5,6 +5,7 @@ import time # for time purposes
 from apscheduler.schedulers.asyncio import AsyncIOScheduler # async scheduler
 from apscheduler.triggers.cron import CronTrigger # timed trigger
 import yaml
+import datetime
 import asyncio # asynchronous funcionality
 import rp_word_counter as rp # word counter
 
@@ -15,7 +16,6 @@ print(f"Setting up...")
 print(" - setting vars")
 with open('stuff.txt', 'r') as file:
     conf = yaml.safe_load(file)
-
 debug_mode=conf["debug"]
 
 print(" - making dictionaries")
@@ -112,16 +112,12 @@ async def proccess_msg_for_rp(msg): # processes msg in terms of rp
         word_limit=account[2]
     else:
         word_limit=conf["rp_limit"]
-    
-    t0=time.time()
 
     if word_limit==0:
         if debug_mode: print("message not eligable for XP gain, reached limit")
         return # if the limit was expended, just ignore
 
     word_count=rp.count(msg.content)
-
-    print(f" - xp processing time: {time.time()-t0}")
 
     if word_count>word_limit: # word limit does it's thing
         word_count=word_limit
@@ -178,11 +174,38 @@ async def reset_word_limits(): # resets all users word limits
         channel = QuestBored.get_channel(881610415304507433)
         await channel.send("Reset word limits")
 
+async def scheduled_xp_check():
+    after_dt=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=10)
+    
+    rp_channels=[]
+    t0=time.time()
+
+    for category in guild.categories: # get all rp channels & threads
+        if category.id in conf["rp_categories"]:
+            rp_channels.extend(category.text_channels)
+            for channel in category.text_channels:
+                if channel.threads:
+                    rp_channels.extend(channel.threads)
+
+    msg_amount=0
+
+    for channel in rp_channels: # get the messages
+        messages = channel.history(after=after_dt, limit=None)
+        async for message in messages:
+            msg_amount = msg_amount + 1
+            await proccess_msg_for_rp(message)
+
+    print(f" - messages: {msg_amount}")
+    print(f" - processing time: {time.time()-t0}")
+
 # --------------------- discord events -------------------- #
 @QuestBored.event
 async def on_ready(): # login msg + ping
+    global guild
+
     sched.start() #start scheduler
     sched.add_job(reset_word_limits, CronTrigger(minute="0",second="0",hour="0"))
+    sched.add_job(scheduled_xp_check, CronTrigger(minute="*/10",second="0"))
 
     print(f"""
 -----------
@@ -190,11 +213,13 @@ Logged in as {QuestBored.user}
 Ping {QuestBored.latency * 1000}ms
 -----------
 """)
-    # a
+    
+    guild = QuestBored.get_guild(829674142570774558)
+    print(f"Checking xp for server: {guild}")
 
 @QuestBored.event
 async def on_message(message): # recieves msg
-    if message.author.bot == False: # ignore bot users
+    if False: # ignore bot users
         t0=time.time()
         print(f"[33m<{time.strftime('%d. %m. %H:%M:%S', time.localtime())} | Message in [0m{message.channel} [33mby [0m{message.author}[33m>[0m\n{message.content[:100]}") # basic debug
 
@@ -367,7 +392,7 @@ async def stats(ctx, member:discord.Member=None): # show member stats
             for rank in range(r-1,r+2):
                 if rank>=0:
                     if rank==r:
-                        rank_txt+=f"> **{rank+1}. <@{ordered[rank][0]}> - {ordered[rank][1]} xp**"
+                        rank_txt+=f"> {rank+1}. **<@{ordered[rank][0]}> - {ordered[rank][1]} xp**"
                     else:
                         rank_txt+=f"> {rank+1}. <@{ordered[rank][0]}> - {ordered[rank][1]} xp"
 

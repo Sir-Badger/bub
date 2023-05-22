@@ -205,7 +205,6 @@ async def on_ready(): # login msg + ping
 
     sched.start() #start scheduler
     sched.add_job(reset_word_limits, CronTrigger(minute="0",second="0",hour="0"))
-    sched.add_job(scheduled_xp_check, CronTrigger(minute="*/10",second="0"))
 
     print(f"""
 -----------
@@ -219,7 +218,8 @@ Ping {QuestBored.latency * 1000}ms
 
 @QuestBored.event
 async def on_message(message): # recieves msg
-    if False: # ignore bot users
+    member=message.author
+    if member.bot==False: # ignore bot users
         t0=time.time()
         print(f"[33m<{time.strftime('%d. %m. %H:%M:%S', time.localtime())} | Message in [0m{message.channel} [33mby [0m{message.author}[33m>[0m\n{message.content[:100]}") # basic debug
 

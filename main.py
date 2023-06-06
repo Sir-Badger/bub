@@ -97,6 +97,7 @@ def lookup_account(id):
     q=database.cursor()
     q.execute(f"""SELECT * FROM {conf['tables']['xp']} WHERE account_id = {id}""")
     account = q.fetchone()
+    q.close()
     return account
 
 # add account to db using default template
@@ -212,9 +213,6 @@ Logged in as {QuestBored.user}
 Ping {QuestBored.latency * 1000}ms
 -----------
 """)
-    
-    guild = QuestBored.get_guild(829674142570774558)
-    print(f"Checking xp for server: {guild}")
 
 @QuestBored.event
 async def on_message(message): # recieves msg

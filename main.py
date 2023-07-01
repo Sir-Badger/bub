@@ -390,7 +390,7 @@ async def stats(ctx, member:discord.Member=None): # show member stats
             for rank in range(r-1,r+2):
                 if rank>=0:
                     if rank==r:
-                        rank_txt+=f"> {rank+1}. **<@{ordered[rank][0]}> - {ordered[rank][1]} xp**"
+                        rank_txt+=f"{rank+1}. **<@{ordered[rank][0]}> - {ordered[rank][1]} xp**"
                     else:
                         rank_txt+=f"> {rank+1}. <@{ordered[rank][0]}> - {ordered[rank][1]} xp"
 
